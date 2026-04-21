@@ -71,12 +71,22 @@ class CBAM(nn.Module):
     Convolutional Block Attention Module (Woo et al., 2018).
     Channel-preserving — no change to spatial size or channel count.
     Applied after the P3, P4, and P5 C2f stages of the YOLOv8s backbone.
+
+    Identity initialisation: gates start at ~0.5 (neutral) so CBAM passes
+    pretrained features through unchanged at epoch 0 and learns gradually.
     """
 
     def __init__(self, channels: int, ratio: int = 8, kernel: int = 7):
         super().__init__()
         self.channel_att = ChannelAttention(channels, ratio)
         self.spatial_att = SpatialAttention(kernel)
+        self._init_identity()
+
+    def _init_identity(self) -> None:
+        """Zero-init the last conv in channel-FC → sigmoid(0)=0.5 neutral gate.
+        Near-zero init spatial conv → uniform spatial weight ≈ 0.5 everywhere."""
+        nn.init.zeros_(self.channel_att.fc[-1].weight)
+        nn.init.normal_(self.spatial_att.conv.weight, mean=0.0, std=0.01)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.channel_att(x)
@@ -401,5 +411,68 @@ def build_agriyolo_model(nc: int = 3, verbose: bool = False):
         trainable = sum(p.numel() for p in yolo.model.parameters() if p.requires_grad)
         print(f"  • Total parameters : {total_params:,}")
         print(f"  • Trainable params : {trainable:,}")
+
+    return yolo
+
+
+def build_cbam_only_model(nc: int = 3, verbose: bool = False):
+    """
+    Build CBAM-Only model: YOLOv8s pretrained backbone + CBAM attention gates.
+
+    Identical to build_agriyolo_model() EXCEPT:
+      • No BiFPN neck — the standard YOLOv8s PAN neck is kept untouched.
+      • Only CBAM is injected after backbone P3/P4/P5 C2f stages.
+
+    This is an ablation variant to isolate the contribution of CBAM alone,
+    decoupled from any BiFPN surgery side-effects.  Because no new neck modules
+    are introduced, the only randomly-initialised parameters are the small CBAM
+    gates (~0.15 M params), which start near-identity and add minimal gradient
+    noise to the pretrained weights.
+
+    Parameters
+    ----------
+    nc : int
+        Number of detection classes (3 for CADI-AI).
+    verbose : bool
+        Print parameter counts and modified layer indices.
+
+    Returns
+    -------
+    ultralytics.YOLO
+        Modified YOLO instance ready for .train() with identical interface
+        to the baseline and to build_agriyolo_model().
+    """
+    from ultralytics import YOLO
+
+    yolo = YOLO("yolov8s.pt")
+
+    if yolo.model.nc != nc:
+        yolo.model.nc = nc
+
+    mods = yolo.model.model._modules
+
+    # Inject CBAM only — DO NOT touch the neck or Detect head
+    for layer_idx, channels in _CBAM_TARGETS.items():
+        key = str(layer_idx)
+        original = mods[key]
+        wrapper = C2fWithCBAM(original, channels)
+        _copy_layer_meta(wrapper, original)
+        wrapper.type = f"C2fCBAM{channels}"
+        mods[key] = wrapper
+        yolo.model.model._modules[key] = wrapper
+
+    if verbose:
+        print("[CBAM-Only] Architecture modifications applied:")
+        print(f"  • CBAM added at backbone layers : {list(_CBAM_TARGETS.keys())}")
+        print(f"  • Neck / Detect head            : UNCHANGED (standard PAN)")
+        total_params = sum(p.numel() for p in yolo.model.parameters())
+        cbam_params  = sum(
+            p.numel()
+            for k, mod in yolo.model.model._modules.items()
+            if isinstance(mod, C2fWithCBAM)
+            for p in mod.cbam.parameters()
+        )
+        print(f"  • Total parameters  : {total_params:,}")
+        print(f"  • CBAM-only params  : {cbam_params:,}")
 
     return yolo
