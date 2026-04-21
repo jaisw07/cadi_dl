@@ -5,7 +5,7 @@ CBAM-Only ablation training and evaluation script.
 
 Architectural scope
 -------------------
-  YOLOv8s backbone  +  CBAM gates after P3 / P4 / P5  +  standard PAN neck (unchanged)
+  YOLOv8n backbone  +  CBAM gates after P3 / P4 / P5  +  standard PAN neck (unchanged)
 
 This is a strict ablation of the full AgriYOLO model (train_agriyolo.py).
 The BiFPN neck is NOT used here.  The only architectural change from the baseline
@@ -37,7 +37,7 @@ from src.agriyolo_modules import build_cbam_only_model
 # ---------------------------------------------------------------------------
 
 def build_model(nc: int = 3) -> Any:
-    """Return a CBAM-Only YOLO instance (YOLOv8s + CBAM, no BiFPN)."""
+    """Return a CBAM-Only YOLO instance (YOLOv8n + CBAM, no BiFPN)."""
     return build_cbam_only_model(nc=nc, verbose=False)
 
 
@@ -86,7 +86,7 @@ def train_cbam(
 
     save_dir = Path(getattr(results, "save_dir", ""))
     summary: Dict[str, Any] = {
-        "model": "CBAM-Only (YOLOv8s + CBAM, no BiFPN)",
+        "model": "CBAM-Only (YOLOv8n + CBAM, no BiFPN)",
         "data_yaml": str(data_yaml),
         "epochs": epochs,
         "patience": patience,

@@ -8,7 +8,7 @@ Every public function has an identical signature, identical default hyper-parame
 identical metric collection, and identical JSON export logic — the ONLY differences
 are:
 
-  • build_model() calls build_agriyolo_model() instead of YOLO("yolov8s.pt")
+  • build_model() calls build_agriyolo_model() instead of YOLO("yolov8n.pt")
   • project / name defaults reflect the agriyolo run directory
 
 This ensures that all comparisons between baseline and AgriYOLO results are fair:
@@ -40,7 +40,7 @@ from src.agriyolo_modules import build_agriyolo_model
 
 
 def build_model(nc: int = 3) -> Any:
-    """Return an AgriYOLO YOLO instance (YOLOv8s + CBAM + BiFPN)."""
+    """Return an AgriYOLO YOLO instance (YOLOv8n + CBAM + BiFPN)."""
     return build_agriyolo_model(nc=nc, verbose=False)
 
 
@@ -97,7 +97,7 @@ def train_agriyolo(
 
     save_dir = Path(getattr(results, "save_dir", ""))
     summary: Dict[str, Any] = {
-        "model": "AgriYOLO (YOLOv8s + CBAM + BiFPN)",
+        "model": "AgriYOLO (YOLOv8n + CBAM + BiFPN)",
         "data_yaml": str(data_yaml),
         "epochs": epochs,
         "patience": patience,

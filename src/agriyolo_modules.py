@@ -394,7 +394,7 @@ def build_agriyolo_model(nc: int = 3, verbose: bool = False):
     """
     from ultralytics import YOLO
 
-    yolo = YOLO("yolov8s.pt")
+    yolo = YOLO("yolov8n.pt")
 
     # Override the number of classes if different from the pretrained nc
     if yolo.model.nc != nc:

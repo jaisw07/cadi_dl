@@ -10,7 +10,7 @@ from tqdm.auto import tqdm
 from ultralytics import YOLO
 
 
-def build_model(weights: str = "yolov8s.pt") -> YOLO:
+def build_model(weights: str = "yolov8n.pt") -> YOLO:
 	"""Create a YOLO model initialized from pretrained weights."""
 	return YOLO(weights)
 
@@ -145,19 +145,19 @@ def evaluate_model(
 
 def train_yolov8_baseline(
 	data_yaml: str | Path = "configs/baseline.yaml",
-	weights: str = "yolov8s.pt",
+	weights: str = "yolov8n.pt",
 	epochs: int = 30,
 	patience: int = 100,
 	imgsz: int = 640,
 	batch: int = 16,
 	device: int | str = 0,
 	project: str = "runs/baseline",
-	name: str = "yolov8s_cadi",
+	name: str = "yolov8n_cadi",
 	save_plots: bool = True,
 	export_metrics_json: bool = True,
 	**extra_train_kwargs: Any,
 ) -> Dict[str, Any]:
-	"""Train YOLOv8s baseline on the configured dataset and export epoch metrics."""
+	"""Train YOLOv8n baseline on the configured dataset and export epoch metrics."""
 	data_yaml = Path(data_yaml)
 	if not data_yaml.exists():
 		raise FileNotFoundError(f"Data config not found: {data_yaml}")
@@ -200,14 +200,14 @@ def train_yolov8_baseline(
 
 def train_and_evaluate_baseline(
 	data_yaml: str | Path = "configs/baseline.yaml",
-	weights: str = "yolov8s.pt",
+	weights: str = "yolov8n.pt",
 	epochs: int = 30,
 	patience: int = 100,
 	imgsz: int = 640,
 	batch: int = 16,
 	device: int | str = 0,
 	project: str = "runs/baseline",
-	name: str = "yolov8s_cadi",
+	name: str = "yolov8n_cadi",
 ) -> Dict[str, Any]:
 	"""Train baseline model then evaluate and save detailed metrics artifacts."""
 	train_summary = train_yolov8_baseline(
